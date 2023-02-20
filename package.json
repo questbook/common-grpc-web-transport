@@ -1,0 +1,21 @@
+{
+	"name": "@questbook/common-grpc-web-transport",
+	"version": "1.0.1",
+	"description": "",
+	"main": "lib/index",
+	"scripts": {
+		"build": "tsc",
+		"prepare": "tsc"
+	},
+	"keywords": [],
+	"author": "Adhiraj Singh",
+	"license": "ISC",
+	"dependencies": {
+		"@improbable-eng/grpc-web": "^0.15.0",
+		"http-parser-js": "^0.5.8"
+	},
+	"devDependencies": {
+		"@types/node": "^16.18.11",
+		"typescript": "^4.2.3"
+	}
+}
