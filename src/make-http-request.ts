@@ -40,6 +40,8 @@ export function makeHttpRequest(
     {
       host: opts.host!,
       port: opts.port ? +opts.port : defaultPort,
+      noDelay: true,
+      keepAlive: true,
     },
     onConnect
   )
