@@ -1,6 +1,6 @@
 import URL from 'url'
-import { grpc } from "@improbable-eng/grpc-web"
-import { SocketConfig } from "./types"
+import { grpc } from '@improbable-eng/grpc-web'
+import { SocketConfig } from './types'
 import { HTTPRequest, makeHttpRequest } from './make-http-request'
 
 type TransportConfig = SocketConfig
@@ -19,7 +19,7 @@ function makeTransport(
     sendMessage(msgBytes: Uint8Array) {
       if (!options.methodDefinition.requestStream  && !options.methodDefinition.responseStream) {
         // Disable chunked encoding if we are not using streams
-        request!.writeHeader("Content-Length", msgBytes.byteLength.toString())
+        request!.writeHeader('Content-Length', msgBytes.byteLength.toString())
       }
       request!.write(msgBytes)
       request!.end()
@@ -30,7 +30,7 @@ function makeTransport(
     start(metadata: grpc.Metadata) {
       const headers: { [key: string]: string } = {}
       metadata.forEach((key, values) => {
-        headers[key] = values.join(", ")
+        headers[key] = values.join(', ')
       })
       const parsedUrl = URL.parse(options.url)
   
@@ -47,7 +47,7 @@ function makeTransport(
       })
   
       request.onError(err => {
-        options.debug && console.log("NodeHttp.error", err)
+        options.debug && console.log('NodeHttp.error', err)
         options.onEnd(err)
       })
   
@@ -57,17 +57,17 @@ function makeTransport(
       })
   
       request.onData(chunk => {
-        options.debug && console.log("NodeHttp.data", chunk)
+        options.debug && console.log('NodeHttp.data', chunk)
         options.onChunk(chunk)
       })
   
       request.onEnd(() => {
-        options.debug && console.log("NodeHttp.end")
+        options.debug && console.log('NodeHttp.end')
         options.onEnd()
       })
     },
     cancel() {
-      options.debug && console.log("NodeHttp.abort")
+      options.debug && console.log('NodeHttp.abort')
       request?.destroy()
     }
   }
