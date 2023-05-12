@@ -5,7 +5,9 @@
 	"main": "lib/index",
 	"scripts": {
 		"build": "tsc",
-		"prepare": "tsc"
+		"prepare": "tsc",
+		"lint": "npm exec eslint . -- --ext .ts",
+		"lint:fix": "npm run lint -- --fix"
 	},
 	"keywords": [],
 	"author": "Adhiraj Singh",
@@ -15,7 +17,9 @@
 		"http-parser-js": "^0.5.8"
 	},
 	"devDependencies": {
+		"@adiwajshing/eslint-config": "github:adiwajshing/eslint-config",
 		"@types/node": "^16.18.11",
+		"eslint": "^8.40.0",
 		"typescript": "^4.2.3"
 	}
 }

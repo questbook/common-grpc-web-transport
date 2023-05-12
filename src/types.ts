@@ -1,7 +1,7 @@
-import type { Socket } from 'net'
-import type { TLSSocket } from 'tls'
+import type { Socket, SocketConnectOpts } from 'net'
+import type { TLSSocket, TLSSocketOptions } from 'tls'
 
 export type SocketConfig = {
-	makeTLSSocket: (socket: Socket) => TLSSocket
-	makeSocket: () => Socket
+	connectTLS(opts: TLSSocketOptions, onConnect: () => void): TLSSocket
+	connectNet(opts: SocketConnectOpts, onConnect: () => void): Socket
 }
