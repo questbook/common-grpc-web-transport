@@ -27,8 +27,10 @@ export function makeHttpRequest(
       noDelay: true,
       keepAlive: true,
     },
-    onConnect
+    () => {}
   )
+
+  netSocket.on('connect', onConnect)
 
 	if(opts.secure && log) {
 		console.log('secure')
