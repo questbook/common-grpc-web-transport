@@ -18,12 +18,12 @@ function makeTransport(
 	return {
 		sendMessage(msgBytes: Uint8Array) {
 			if(!options.methodDefinition.requestStream && !options.methodDefinition.responseStream) {
-        // Disable chunked encoding if we are not using streams
-        request!.writeHeader('Content-Length', msgBytes.byteLength.toString())
+				// Disable chunked encoding if we are not using streams
+				request!.writeHeader('Content-Length', msgBytes.byteLength.toString())
 			}
 
-      request!.write(msgBytes)
-      request!.end()
+			request!.write(msgBytes)
+			request!.end()
 		},
 		finishSend() {
 
@@ -41,9 +41,9 @@ function makeTransport(
 				path: parsedUrl.path,
 				headers: headers,
 				method: 'POST',
-				log: options.methodDefinition.responseStream,
+				log: options.debug,
 				secure: parsedUrl.protocol === 'https:',
-		    ...config
+				...config
 			})
 
 			request.onError(err => {
@@ -73,8 +73,8 @@ function makeTransport(
 	}
 }
 
-function filterHeadersForUndefined(headers: {[key: string]: string | string[] | undefined}): {[key: string]: string | string[]} {
-	const filteredHeaders: {[key: string]: string | string[]} = {}
+function filterHeadersForUndefined(headers: { [key: string]: string | string[] | undefined }): { [key: string]: string | string[] } {
+	const filteredHeaders: { [key: string]: string | string[] } = {}
 
 	for(const key in headers) {
 		const value = headers[key]

@@ -4,6 +4,8 @@ import { SocketConfig } from './types'
 
 export type HTTPRequest = ReturnType<typeof makeHttpRequest>
 
+type SocketState = 'connecting' | 'connected' | 'closed'
+
 export function makeHttpRequest(
 	opts: http.RequestOptions & {
     secure: boolean
@@ -40,6 +42,7 @@ export function makeHttpRequest(
 
 	let sentInit = false
 	let sentContentLengthHeader = false
+  let state: SocketState = 'connecting'
 
 	for(const key in opts.headers) {
 		writeHeader(key, `${opts.headers[key]}`)
@@ -87,6 +90,13 @@ export function makeHttpRequest(
 
 		resParser.execute(data)
 	})
+
+  netSocket.on('close', () => {
+    if(log) {
+      console.log('closed socket')
+    }
+    state = 'closed'
+  })
 
 	return {
 		onError(callback: (err: Error) => void) {
@@ -149,14 +159,19 @@ export function makeHttpRequest(
 	}
 
 	function writeToSocket(buff: Uint8Array | string) {
-		if(netSocket.connecting) {
-			pendingWrites.push(buff)
-		} else {
-			netSocket.write(buff)
-		}
+    if(state === 'closed') {
+      throw new Error('Socket is closed')
+    }
+
+    if(state === 'connected') {
+      netSocket.write(buff)
+    } else {
+      pendingWrites.push(buff)
+    }
 	}
 
 	function onConnect() {
+    state = 'connected'
     netSocket.setNoDelay(true)
     netSocket.setKeepAlive(true)
 		for(const pendingWrite of pendingWrites) {
