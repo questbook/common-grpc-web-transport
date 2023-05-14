@@ -22,7 +22,7 @@ export function getSocketConfig(type: Exclude<TransportType, 'browser'>): Socket
 		}
 	}
 
-	const { default: sockets } = require('react-native-tcp-socket')
+	const sockets = require('react-native-tcp-socket')
 	return {
 		connectNet: sockets.connect,
 		connectTLS: sockets.connectTLS,
