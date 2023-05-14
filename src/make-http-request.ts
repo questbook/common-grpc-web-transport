@@ -1,102 +1,101 @@
 import type * as http from 'http'
 import { HTTPParser } from 'http-parser-js'
+import { Logger } from 'pino'
 import { SocketConfig } from './types'
 
 export type HTTPRequest = ReturnType<typeof makeHttpRequest>
 
 type SocketState = 'connecting' | 'connected' | 'closed'
 
-export function makeHttpRequest(
-	opts: http.RequestOptions & {
+type MakeHTTPRequestOptions = http.RequestOptions & {
+	/** Whether to use TLS or not */
     secure: boolean
-    log?: boolean
+    logger: Logger
   } & SocketConfig
+
+/**
+ * Creates an HTTP request & sends it over a socket
+ */
+export function makeHttpRequest(
+	{
+		secure,
+		method,
+		path,
+		host,
+		port,
+		logger,
+		headers,
+		connectNet,
+		connectTLS
+	}: MakeHTTPRequestOptions
 ) {
-	const defaultPort = opts.secure ? 443 : 80
-	const log = opts.log ?? false
+	const defaultPort = secure ? 443 : 80
 	const lines = [
-		`${opts.method} ${opts.path} HTTP/1.1`,
-		`Host: ${opts.host}`,
+		`${method} ${path} HTTP/1.1`,
+		`Host: ${host}`,
 	]
 	const resParser = new HTTPParser(HTTPParser.RESPONSE)
-  const connect = opts.secure
-    ? opts.connectTLS
-    : opts.connectNet
+	const connect = secure ? connectTLS : connectNet
 	const netSocket = connect(
-    {
-      host: opts.host!,
-      port: opts.port ? +opts.port : defaultPort,
-      noDelay: true,
-      keepAlive: true,
-    },
-    () => {}
-  )
+		{
+			host: host!,
+			port: port ? +port : defaultPort,
+			noDelay: true,
+			keepAlive: true,
+		},
+		() => {}
+	)
+	netSocket.setTimeout(10_000)
 
-  netSocket.on('connect', onConnect)
+	netSocket.on('connect', onConnect)
 
-	if(opts.secure && log) {
-		console.log('secure')
-	}
+	logger.trace(`connecting over ${secure ? 'tls' : 'tcp'}`)
 
 	let pendingWrites: (Uint8Array | string)[] = []
+	let pendingEnd = false
 
 	let sentInit = false
 	let sentContentLengthHeader = false
-  let state: SocketState = 'connecting'
+	let state: SocketState = 'connecting'
 
-	for(const key in opts.headers) {
-		writeHeader(key, `${opts.headers[key]}`)
+	for(const key in headers) {
+		writeHeader(key, `${headers[key]}`)
 	}
 
 	resParser.onBody = (chunk, offset, length) => {
 		chunk = chunk.subarray(offset, offset + length)
-		if(log) {
-			console.log('recv body', chunk)
-		}
-
-		// const data =
 		netSocket.emit('data-http', chunk)
 	}
 
 	resParser.onHeadersComplete = (info) => {
 		const headers: { [_: string]: string } = {}
 		for(let i = 0;i < info.headers.length;i += 2) {
-			headers[info.headers[i].toString()] = info.headers[i + 1].toString()
+			headers[info.headers[i].toString()] =
+				info.headers[i + 1].toString()
 		}
 
-		if(log) {
-			console.log('recv headers', info.statusCode, headers)
-		}
-
-		netSocket.emit(
-			'headers',
-			info.statusCode,
-			headers,
+		logger.trace(
+			{ statusCode: info.statusCode, headers },
+			'recv headers'
 		)
+
+		netSocket.emit('headers', info.statusCode, headers)
 	}
 
 	resParser.onMessageComplete = () => {
-		if(log) {
-			console.log('recv end')
-		}
-
-		netSocket.emit('end-http')
+		logger.trace('http request complete')
+		handleSocketEnd()
 	}
 
 	netSocket.on('data', data => {
-		if(log) {
-			console.log('recv ', data.toString())
-		}
-
+		logger.trace({ data: data.toString() }, 'recv raw data')
 		resParser.execute(data)
 	})
 
-  netSocket.on('close', () => {
-    if(log) {
-      console.log('closed socket')
-    }
-    state = 'closed'
-  })
+	netSocket.on('error', (err) => {
+		logger.trace({ err }, 'socket error')
+		handleSocketEnd()
+	})
 
 	return {
 		onError(callback: (err: Error) => void) {
@@ -112,25 +111,35 @@ export function makeHttpRequest(
 			netSocket.on('end-http', callback)
 		},
 		end() {
-			netSocket.end()
+			if(state === 'connecting') {
+				logger.trace('pending end')
+				pendingEnd = true
+			} else if(state === 'connected') {
+				netSocket.end()
+			}
 		},
 		destroy() {
 			netSocket.destroy()
 		},
 		write,
 		writeHeader,
+		finishWrite,
+	}
+
+	function handleSocketEnd() {
+		state = 'closed'
+		netSocket.emit('end-http')
+		netSocket.end()
 	}
 
 	function write(content: Uint8Array | string) {
 		if(!sentContentLengthHeader) {
-			writeHeader('transfer-encoding', 'chunked')
+			writeHeader('Transfer-Encoding', 'chunked')
 		}
 
 		if(!sentInit) {
 			const initData = lines.join('\r\n') + '\r\n\r\n'
-			if(log) {
-				console.log('sent init data', initData)
-			}
+			logger.trace({ initData }, 'sent init data')
 
 			writeToSocket(initData)
 			sentInit = true
@@ -142,7 +151,13 @@ export function makeHttpRequest(
 
 		writeToSocket(content)
 		if(!sentContentLengthHeader) {
-			writeToSocket('\r\n0\r\n\r\n')
+			writeToSocket('\r\n')
+		}
+	}
+
+	function finishWrite() {
+		if(!sentContentLengthHeader) {
+			writeToSocket('0\r\n\r\n')
 		}
 	}
 
@@ -159,25 +174,28 @@ export function makeHttpRequest(
 	}
 
 	function writeToSocket(buff: Uint8Array | string) {
-    if(state === 'closed') {
-      throw new Error('Socket is closed')
-    }
+		if(state === 'closed') {
+			throw new Error('Socket is closed')
+		}
 
-    if(state === 'connected') {
-      netSocket.write(buff)
-    } else {
-      pendingWrites.push(buff)
-    }
+		if(state === 'connected') {
+			netSocket.write(buff)
+		} else {
+			pendingWrites.push(buff)
+		}
 	}
 
 	function onConnect() {
-    state = 'connected'
-    netSocket.setNoDelay(true)
-    netSocket.setKeepAlive(true)
-		for(const pendingWrite of pendingWrites) {
-			netSocket.write(pendingWrite)
+		logger.trace({ host, port }, 'connected')
+		state = 'connected'
+
+		for(let i = 0;i < pendingWrites.length;i++) {
+			netSocket.write(pendingWrites[i])
 		}
 
 		pendingWrites = []
+		if(pendingEnd) {
+			state = 'closed'
+		}
 	}
 }

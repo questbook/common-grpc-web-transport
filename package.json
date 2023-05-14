@@ -14,7 +14,16 @@
 	"license": "ISC",
 	"dependencies": {
 		"@improbable-eng/grpc-web": "^0.15.0",
-		"http-parser-js": "^0.5.8"
+		"http-parser-js": "^0.5.8",
+		"pino": "^8.14.1"
+	},
+	"peerDependencies": {
+		"react-native-tcp-socket": "*"
+	},
+	"peerDependenciesMeta": {
+		"react-native-tcp-socket": {
+			"optional": true
+		}
 	},
 	"devDependencies": {
 		"@adiwajshing/eslint-config": "github:adiwajshing/eslint-config",
