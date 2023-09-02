@@ -1,7 +1,7 @@
 import type { Socket, SocketConnectOpts } from 'net'
 import type { TLSSocket, TLSSocketOptions } from 'tls'
 
-export type Logger = Pick<typeof console, 'log' | 'trace' | 'debug' | 'info' | 'warn' | 'error'>
+export type Logger = Pick<typeof console, 'trace' | 'debug' | 'info' | 'warn' | 'error'>
 	& {
 		child: (opts: { [_: string]: any }) => Logger
 	}
