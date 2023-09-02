@@ -14,8 +14,7 @@
 	"license": "ISC",
 	"dependencies": {
 		"@improbable-eng/grpc-web": "^0.15.0",
-		"http-parser-js": "^0.5.8",
-		"pino": "^8.14.1"
+		"http-parser-js": "^0.5.8"
 	},
 	"peerDependencies": {
 		"react-native-tcp-socket": "*"

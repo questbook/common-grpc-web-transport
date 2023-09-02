@@ -1,5 +1,4 @@
 import { grpc } from '@improbable-eng/grpc-web'
-import P from 'pino'
 import URL from 'url'
 import { HTTPRequest, makeHttpRequest } from './make-http-request'
 import type { SocketConfig } from './types'
@@ -10,16 +9,10 @@ export function makeSocketBasedTransport(
 ): grpc.Transport {
 	const parsedUrl = URL.parse(options.url)
 	let request: HTTPRequest | undefined
-	const logger = (config.logger || P())
-		.child({
-			rpc: options.methodDefinition.methodName,
-			id: generateRequestId()
-		})
-	// if we're in debug mode, set the logger to debug
-	// if the logger is already set to debug, leave it
-	if(options.debug && logger.levelVal > 10) {
-		logger.level = 'trace'
-	}
+	const logger = config.logger?.child({
+		rpc: options.methodDefinition.methodName,
+		id: generateRequestId()
+	})
 
 	return {
 		sendMessage(msgBytes: Uint8Array) {
@@ -27,7 +20,7 @@ export function makeSocketBasedTransport(
 				!options.methodDefinition.requestStream
 				&& !options.methodDefinition.responseStream
 			) {
-				logger.trace(
+				logger?.trace(
 					{ length: msgBytes.byteLength },
 					'set content length'
 				)
@@ -41,7 +34,7 @@ export function makeSocketBasedTransport(
 			request!.write(msgBytes)
 		},
 		finishSend() {
-			logger.trace('finished write')
+			logger?.trace('finished write')
 			request!.finishWrite()
 			request!.end()
 		},
@@ -63,7 +56,7 @@ export function makeSocketBasedTransport(
 			})
 
 			request.onError(err => {
-				logger.error({ err }, 'error in request')
+				logger?.error({ err }, 'error in request')
 				options.onEnd(err)
 			})
 
@@ -73,17 +66,17 @@ export function makeSocketBasedTransport(
 			})
 
 			request.onData(chunk => {
-				logger.trace({ chunk: chunk.toString() }, 'received chunk')
+				logger?.trace({ chunk: chunk.toString() }, 'received chunk')
 				options.onChunk(chunk)
 			})
 
 			request.onEnd(() => {
-				logger.trace('request ended')
+				logger?.trace('request ended')
 				options.onEnd()
 			})
 		},
 		cancel() {
-			logger.trace('canceling request')
+			logger?.trace('canceling request')
 			request?.destroy()
 		}
 	}

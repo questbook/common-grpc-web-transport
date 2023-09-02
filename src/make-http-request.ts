@@ -1,7 +1,6 @@
 import type * as http from 'http'
 import { HTTPParser } from 'http-parser-js'
-import { Logger } from 'pino'
-import { SocketConfig } from './types'
+import { Logger, SocketConfig } from './types'
 
 export type HTTPRequest = ReturnType<typeof makeHttpRequest>
 
@@ -10,7 +9,7 @@ type SocketState = 'connecting' | 'connected' | 'closed'
 type MakeHTTPRequestOptions = http.RequestOptions & {
 	/** Whether to use TLS or not */
     secure: boolean
-    logger: Logger
+    logger?: Logger
   } & SocketConfig
 
 /**
@@ -49,7 +48,7 @@ export function makeHttpRequest(
 
 	netSocket.on('connect', onConnect)
 
-	logger.trace(`connecting over ${secure ? 'tls' : 'tcp'}`)
+	logger?.trace(`connecting over ${secure ? 'tls' : 'tcp'}`)
 
 	let pendingWrites: (Uint8Array | string)[] = []
 	let pendingEnd = false
@@ -74,7 +73,7 @@ export function makeHttpRequest(
 				info.headers[i + 1].toString()
 		}
 
-		logger.trace(
+		logger?.trace(
 			{ statusCode: info.statusCode, headers },
 			'recv headers'
 		)
@@ -83,17 +82,17 @@ export function makeHttpRequest(
 	}
 
 	resParser.onMessageComplete = () => {
-		logger.trace('http request complete')
+		logger?.trace('http request complete')
 		handleSocketEnd()
 	}
 
 	netSocket.on('data', data => {
-		logger.trace({ data: data.toString() }, 'recv raw data')
+		logger?.trace({ data: data.toString() }, 'recv raw data')
 		resParser.execute(data)
 	})
 
 	netSocket.on('error', (err) => {
-		logger.trace({ err }, 'socket error')
+		logger?.trace({ err }, 'socket error')
 		handleSocketEnd()
 	})
 
@@ -112,7 +111,7 @@ export function makeHttpRequest(
 		},
 		end() {
 			if(state === 'connecting') {
-				logger.trace('pending end')
+				logger?.trace('pending end')
 				pendingEnd = true
 			} else if(state === 'connected') {
 				netSocket.end()
@@ -139,7 +138,7 @@ export function makeHttpRequest(
 
 		if(!sentInit) {
 			const initData = lines.join('\r\n') + '\r\n\r\n'
-			logger.trace({ initData }, 'sent init data')
+			logger?.trace({ initData }, 'sent init data')
 
 			writeToSocket(initData)
 			sentInit = true
@@ -186,7 +185,7 @@ export function makeHttpRequest(
 	}
 
 	function onConnect() {
-		logger.trace({ host, port }, 'connected')
+		logger?.trace({ host, port }, 'connected')
 		state = 'connected'
 
 		for(let i = 0;i < pendingWrites.length;i++) {

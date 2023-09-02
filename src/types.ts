@@ -1,6 +1,10 @@
 import type { Socket, SocketConnectOpts } from 'net'
-import { Logger } from 'pino'
 import type { TLSSocket, TLSSocketOptions } from 'tls'
+
+export type Logger = Pick<typeof console, 'log' | 'trace' | 'debug' | 'info' | 'warn' | 'error'>
+	& {
+		child: (opts: { [_: string]: any }) => Logger
+	}
 
 export type SocketConfig = {
 	/** create a TLS socket */
