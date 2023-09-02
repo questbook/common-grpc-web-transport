@@ -1,5 +1,4 @@
 import { grpc } from '@improbable-eng/grpc-web'
-import URL from 'url'
 import { HTTPRequest, makeHttpRequest } from './make-http-request'
 import type { SocketConfig } from './types'
 
@@ -7,7 +6,7 @@ export function makeSocketBasedTransport(
 	options: grpc.TransportOptions,
 	config: SocketConfig
 ): grpc.Transport {
-	const parsedUrl = URL.parse(options.url)
+	const parsedUrl = new URL(options.url)
 	let request: HTTPRequest | undefined
 	const logger = config.logger?.child({
 		rpc: options.methodDefinition.methodName,
@@ -47,7 +46,7 @@ export function makeSocketBasedTransport(
 			request = makeHttpRequest({
 				host: parsedUrl.hostname,
 				port: parsedUrl.port ? +parsedUrl.port : undefined,
-				path: parsedUrl.path,
+				path: parsedUrl.pathname,
 				headers: headers,
 				method: 'POST',
 				secure: parsedUrl.protocol === 'https:',
