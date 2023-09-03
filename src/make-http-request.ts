@@ -1,6 +1,6 @@
 import type * as http from 'http'
-import { HTTPParser } from 'http-parser-js'
-import { Logger, SocketConfig } from './types'
+import type { HTTPParserJS as HTTPParserType } from 'http-parser-js'
+import type { Logger, SocketConfig } from './types'
 
 export type HTTPRequest = ReturnType<typeof makeHttpRequest>
 
@@ -33,7 +33,9 @@ export function makeHttpRequest(
 		`${method} ${path} HTTP/1.1`,
 		`Host: ${host}`,
 	]
-	const resParser = new HTTPParser(HTTPParser.RESPONSE)
+	// import here to avoid bundling http-parser-js in the browser
+	const { HTTPParser } = require('http-parser-js')
+	const resParser = new HTTPParser(HTTPParser.RESPONSE) as HTTPParserType
 	const connect = secure ? connectTLS : connectNet
 	const netSocket = connect(
 		{

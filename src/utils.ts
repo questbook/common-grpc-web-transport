@@ -1,4 +1,4 @@
-import { SocketConfig, TransportType } from './types'
+import type { SocketConfig, TransportType } from './types'
 
 export function detectEnvironment(): TransportType {
 	if(typeof navigator !== 'undefined' && navigator.product === 'ReactNative') {
