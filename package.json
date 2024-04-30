@@ -1,5 +1,5 @@
 {
-	"name": "@questbook/common-grpc-web-transport",
+	"name": "@reclaimprotocol/common-grpc-web-transport",
 	"version": "1.0.1",
 	"description": "",
 	"main": "lib/index",

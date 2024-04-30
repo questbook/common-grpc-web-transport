@@ -1,5 +1,5 @@
 import { grpc } from '@improbable-eng/grpc-web'
-import { makeSocketBasedTransport } from './make-socket-based-transport'
+import { makeFetchBasedTransport } from './make-fetch-based-transport'
 import type { TransportConfig } from './types'
 import { detectEnvironment, getSocketConfig } from './utils'
 
@@ -18,5 +18,5 @@ export function CommonTransport(
 	const config = getSocketConfig(type)
 	config.logger = logger
 
-	return opts => makeSocketBasedTransport(opts, config)
+	return opts => makeFetchBasedTransport(opts, config)
 }
